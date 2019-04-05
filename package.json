@@ -15,5 +15,8 @@
     "bugs": {
         "url": "https://github.com/hazem3500/virtual-file-system/issues"
     },
-    "homepage": "https://github.com/hazem3500/virtual-file-system#readme"
+    "homepage": "https://github.com/hazem3500/virtual-file-system#readme",
+    "dependencies": {
+        "key-file-storage": "^2.1.5"
+    }
 }
