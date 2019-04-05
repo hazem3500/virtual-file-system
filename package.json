@@ -17,6 +17,8 @@
     },
     "homepage": "https://github.com/hazem3500/virtual-file-system#readme",
     "dependencies": {
+        "bluebird": "^3.5.4",
+        "inquirer": "^6.2.2",
         "key-file-storage": "^2.1.5"
     }
 }
