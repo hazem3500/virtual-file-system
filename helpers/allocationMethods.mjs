@@ -42,35 +42,38 @@ export default function allocationStrategy(allocationType) {
         };
     }
 }
-function getFreeSpace(blocks) {
-    let startOfEmptyBlock;
-    return blocks.reduce((freeSpaces, block, i, blocks) => {
-        // first block in free space
-        if (!block && startOfEmptyBlock === undefined) {
-            startOfEmptyBlock = i;
-        }
-        // first non-empty block after free space
-        else if (block && !blocks[i - 1] && i !== 0) {
-            freeSpaces.push({
-                start: startOfEmptyBlock,
-                size: i - startOfEmptyBlock
+export function getFreeSpace(blocks) {
+    return getSpaces(blocks, false);
+}
+
+export function getAllocatedSpace(blocks) {
+    return getSpaces(blocks, true);
+}
+
+function getSpaces(blocks, value) {
+    let startOfBlock;
+    return blocks.reduce((allocatedSpaces, block, i, blocks) => {
+        if (block === value && startOfBlock === undefined) {
+            startOfBlock = i;
+        } else if (block !== value && blocks[i - 1] === value && i !== 0) {
+            allocatedSpaces.push({
+                start: startOfBlock,
+                size: i - startOfBlock
             });
-            startOfEmptyBlock = undefined;
-            return freeSpaces;
-        }
-        // last empty block
-        else if (!block && i === blocks.length - 1) {
-            freeSpaces.push({
-                start: startOfEmptyBlock,
-                size: i + 1 - startOfEmptyBlock
+            startOfBlock = undefined;
+            return allocatedSpaces;
+        } else if (block === value && i === blocks.length - 1) {
+            allocatedSpaces.push({
+                start: startOfBlock,
+                size: i + 1 - startOfBlock
             });
-            return freeSpaces;
+            return allocatedSpaces;
         }
-        return freeSpaces;
+        return allocatedSpaces;
     }, []);
 }
 
-function getLargestEmptySpace(blocks) {
+export function getLargestEmptySpace(blocks) {
     return getFreeSpace(blocks).reduce(
         (largestFreeSpace, currFreeSpace) => {
             if (currFreeSpace.size > largestFreeSpace.size) {
