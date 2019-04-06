@@ -1,3 +1,5 @@
+import FileSystem from '../classes/FileSystem.mjs';
+
 const contiguous = {
     allocate(blocks, file) {
         const largestSpace = getLargestEmptySpace(blocks);
@@ -86,8 +88,43 @@ const linked = {
 };
 
 const indexed = {
-    allocate(blocks, file) {},
-    deallocate(blocks, file) {}
+    allocate(blocks, file) {
+        const freeSpace = getFreeSpace(blocks);
+        const freeSpaceLeft = freeSpace.reduce(
+            (size, space) => size + space.size,
+            0
+        );
+        if (freeSpaceLeft < file.size) throw Error('Out of memory!');
+
+        let remainingFileSize = file.size;
+
+        for (let i = 0; i < freeSpace.length; i++) {
+            if (freeSpace[i].size < remainingFileSize) {
+                file.blocks.push({
+                    start: freeSpace[i].start,
+                    size: freeSpace[i].size
+                });
+                remainingFileSize -= freeSpace[i].size;
+            } else {
+                file.blocks.push({
+                    start: freeSpace[i].start,
+                    size: remainingFileSize
+                });
+                break;
+            }
+        }
+
+        file.blocks.forEach((block) => {
+            setSpaceValue(blocks, block, true);
+        });
+    },
+    deallocate(blocks, file) {
+        if (!file.blocks) throw Error('File not allocated!');
+
+        file.blocks.forEach((block) => {
+            setSpaceValue(blocks, block, false);
+        });
+    }
 };
 
 export default function allocationStrategy(allocationType) {
