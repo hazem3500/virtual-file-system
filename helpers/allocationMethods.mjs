@@ -26,7 +26,7 @@ const linked = {
         );
         if (freeSpaceLeft < file.size) throw Error('Out of memory!');
 
-        let firstAllocatedSpace;
+        const allocatedSpaces = [];
         let remainingFileSize = file.size;
 
         for (let i = 0; i < freeSpace.length; i++) {
@@ -47,84 +47,51 @@ const linked = {
             }
         }
 
-        file.blocks.push(firstAllocatedSpace);
+        file.blocks.push({
+            start: allocatedSpaces[0].start,
+            end: allocatedSpaces[allocatedSpaces.length - 1].start
+        });
 
-        setAllocatedSpaceValues();
-
-        function setAllocatedSpaceValues() {
-            let currAllocatedSpace = firstAllocatedSpace;
-            do {
-                setSpaceValue(blocks, currAllocatedSpace, true);
-                if (currAllocatedSpace.nextSpace) {
-                    currAllocatedSpace = currAllocatedSpace.nextSpace;
-                }
-            } while (currAllocatedSpace.nextSpace);
-        }
+        allocatedSpaces.forEach((allocatedSpace) => {
+            setSpaceValue(blocks, allocatedSpace, true, {
+                size: allocatedSpace.size,
+                nextSpace: allocatedSpace.nextSpace
+            });
+        });
 
         function addAllocatedSpace(space) {
-            if (!firstAllocatedSpace) {
-                firstAllocatedSpace = space;
-                return;
+            if (allocatedSpaces.length) {
+                allocatedSpaces[allocatedSpaces.length - 1].nextSpace =
+                    space.start;
             }
-            let currAllocatedSpace = firstAllocatedSpace;
-            while (currAllocatedSpace.nextSpace) {
-                currAllocatedSpace = currAllocatedSpace.nextSpace;
-            }
-            currAllocatedSpace.nextSpace = space;
+            allocatedSpaces.push(space);
         }
     },
 
     deallocate(blocks, file) {
         if (!file.blocks) throw Error('File not allocated!');
 
-        let currAllocatedSpace = file.blocks[0];
+        let currIndex = file.blocks[0].start;
+        let currAllocatedSpace = blocks[currIndex];
         do {
-            setSpaceValue(blocks, currAllocatedSpace, false);
+            setSpaceValue(
+                blocks,
+                { start: currIndex, size: currAllocatedSpace.size },
+                false
+            );
             if (currAllocatedSpace.nextSpace) {
-                currAllocatedSpace = currAllocatedSpace.nextSpace;
+                currIndex = currAllocatedSpace.nextSpace;
+                currAllocatedSpace = blocks[currIndex];
+            } else {
+                currIndex = null;
             }
-        } while (currAllocatedSpace.nextSpace);
+        } while (currIndex);
     }
 };
 
 const indexed = {
-    allocate(blocks, file) {
-        const freeSpace = getFreeSpace(blocks);
-        const freeSpaceLeft = freeSpace.reduce(
-            (size, space) => size + space.size,
-            0
-        );
-        if (freeSpaceLeft < file.size) throw Error('Out of memory!');
-
-        let remainingFileSize = file.size;
-
-        for (let i = 0; i < freeSpace.length; i++) {
-            if (freeSpace[i].size < remainingFileSize) {
-                file.blocks.push({
-                    start: freeSpace[i].start,
-                    size: freeSpace[i].size
-                });
-                remainingFileSize -= freeSpace[i].size;
-            } else {
-                file.blocks.push({
-                    start: freeSpace[i].start,
-                    size: remainingFileSize
-                });
-                break;
-            }
-        }
-
-        file.blocks.forEach((block) => {
-            setSpaceValue(blocks, block, true);
-        });
-    },
-    deallocate(blocks, file) {
-        if (!file.blocks) throw Error('File not allocated!');
-
-        file.blocks.forEach((block) => {
-            setSpaceValue(blocks, block, false);
-        });
-    }
+    allocate(blocks, file) {},
+    deallocate(blocks, file) {}
 };
 
 export default function allocationStrategy(allocationType) {
@@ -181,8 +148,9 @@ export function getLargestEmptySpace(blocks) {
     );
 }
 
-function setSpaceValue(blocks, { start, size }, value) {
+function setSpaceValue(blocks, { start, size }, value, nextSpacePointer) {
     for (let i = start; i < start + size; i++) {
-        blocks[i] = value;
+        if (i === start && nextSpacePointer) blocks[i] = nextSpacePointer;
+        else blocks[i] = value;
     }
 }
