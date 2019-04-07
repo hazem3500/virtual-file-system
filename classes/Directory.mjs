@@ -21,9 +21,8 @@ export default class Directory {
         throw Error('This file does not exist!');
     }
 
-    getAllFiles(files = [], currDirectoryName, ...subDirectories) {
-        if (!currDirectoryName) return [...this.files, ...files];
-        const currDirectory = this.getSubDirectory(currDirectoryName);
+    getAllFiles(files = [], currDirectory, ...subDirectories) {
+        if (!currDirectory) return [...this.files, ...files];
         files = [...files, ...currDirectory.files];
         return currDirectory.getAllFiles(files, ...subDirectories);
     }
