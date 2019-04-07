@@ -4,10 +4,15 @@ const contiguous = {
     allocate(blocks, file) {
         const largestSpace = getLargestEmptySpace(blocks);
         if (largestSpace.size < file.size) throw Error('Out of memory!');
-        file.blocks.push({ start: largestSpace.start, size: file.size });
+        file.blocks.push({
+            start: largestSpace.start,
+            size: file.size
+        });
         setSpaceValue(
-            blocks,
-            { start: largestSpace.start, size: file.size },
+            blocks, {
+                start: largestSpace.start,
+                size: file.size
+            },
             true
         );
     },
@@ -75,8 +80,10 @@ const linked = {
         let currAllocatedSpace = blocks[currIndex];
         do {
             setSpaceValue(
-                blocks,
-                { start: currIndex, size: currAllocatedSpace.size },
+                blocks, {
+                    start: currIndex,
+                    size: currAllocatedSpace.size
+                },
                 false
             );
             if (currAllocatedSpace.nextSpace) {
@@ -90,8 +97,19 @@ const linked = {
 };
 
 const indexed = {
-    allocate(blocks, file) {},
-    deallocate(blocks, file) {}
+    allocate(blocks, file) {
+        let indices = getArrayOfFreeBlocks(blocks);
+        if ((indices.length - 1) < file.size) throw Error('Out of memory!');
+        let indexBlock = assignBlocks(indices, blocks, file.size);
+        file.blocks = {
+            index: indexBlock
+        }
+    },
+    deallocate(blocks, file) {
+        const indexBlock = file.blocks.index;
+        deassignBlocks(blocks[indexBlock], blocks);
+        blocks[indexBlock] = false;
+    }
 };
 
 export default function allocationStrategy(allocationType) {
@@ -143,14 +161,41 @@ export function getLargestEmptySpace(blocks) {
                 return currFreeSpace;
             }
             return largestFreeSpace;
-        },
-        { size: 0 }
+        }, {
+            size: 0
+        }
     );
 }
 
-function setSpaceValue(blocks, { start, size }, value, nextSpacePointer) {
+function setSpaceValue(blocks, {
+    start,
+    size
+}, value, nextSpacePointer) {
     for (let i = start; i < start + size; i++) {
         if (i === start && nextSpacePointer) blocks[i] = nextSpacePointer;
         else blocks[i] = value;
     }
+}
+
+
+function getArrayOfFreeBlocks(blocks) {
+    return blocks.reduce(
+        (out, bool, index) => (!Array.isArray(bool) && !bool) ? out.concat(index) : out,
+        []
+    )
+}
+
+function assignBlocks(indices, blocks, file_size) {
+    const blocks_to_assign = indices.slice(0,file_size);
+    blocks_to_assign.forEach(function (index, i) {
+       blocks[index] = true;
+    })
+    blocks[indices[file_size]] = blocks_to_assign;
+    return indices[file_size];
+}
+
+function deassignBlocks(indices, blocks) {
+    indices.forEach(function (index) {
+    blocks[index] = false;
+    })
 }

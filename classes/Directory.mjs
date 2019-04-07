@@ -10,6 +10,7 @@ export default class Directory {
     }
 
     addFile(file) {
+        if (this.checkIfFileExist(file.name)) throw Error('File Already exists');
         this.files.push(file);
     }
 
@@ -40,6 +41,10 @@ export default class Directory {
     }
 
     addDirectory(name) {
+        const alreadyExists = this.subDirectories.findIndex(
+            (dir) => dir.name === name
+        ) !== -1;
+        if (alreadyExists) throw Error('Directory already exists');
         const newDirectory = new Directory({ name });
         this.subDirectories.push(newDirectory);
     }
